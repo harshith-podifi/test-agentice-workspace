@@ -1,0 +1,7 @@
+.cursor/plans
+.cursor/plans/**
+*__primary_worktree
+*__worktrees
+config.local.yaml
+.claude/settings.local.json
+personal_worktree

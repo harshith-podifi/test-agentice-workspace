@@ -1,0 +1,15 @@
+{
+  "projects": [
+    {
+      "name": "Platform Delivery",
+      "id": "PLAT",
+      "url": "https://jira.example.com/jira/software/c/projects/PLAT",
+      "boards": [
+        {
+          "id": "23",
+          "url": "https://jira.example.com/jira/software/c/projects/PLAT/boards/23"
+        }
+      ]
+    }
+  ]
+}

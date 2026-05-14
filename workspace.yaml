@@ -1,0 +1,39 @@
+projects:
+  - key: test
+    name: "test"
+    description: "Test project"
+    provider: github
+    repository: "https://github.com/harshith-podifi/test"
+    default_branch: "main"
+proposal:
+  backlog_path: "proposals/backlog"
+  inprogress_path: "proposals/inprogress"
+  completed_path: "proposals/completed"
+spec:
+  backlog_path: "specs/backlog"
+  inprogress_path: "specs/inprogress"
+  completed_path: "specs/completed"
+execution:
+  type_mapping:
+    feature: feat
+    bugfix: fix
+    refactor: refactor
+    chore: chore
+  commits:
+    message_format: "{type}: {short_summary}"
+    examples: []
+  pull_request:
+    auto_open: true
+    target_branch: "main"
+    title_format: "{type}: {short_summary}"
+    description_format: |
+      Implements: {spec_path}
+  testing:
+    unit_tests_required: true
+    e2e_tests_required: false
+    e2e_setup_command: ~
+required_cli_tools:
+  - git
+  - python
+  - tree
+  - rg

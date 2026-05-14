@@ -1,0 +1,14 @@
+projects: []
+proposal:
+  backlog_path: "proposals/backlog"
+  inprogress_path: "proposals/inprogress"
+  completed_path: "proposals/completed"
+spec:
+  backlog_path: "specs/backlog"
+  inprogress_path: "specs/inprogress"
+  completed_path: "specs/completed"
+required_cli_tools:
+  - git
+  - python
+  - tree
+  - rg
