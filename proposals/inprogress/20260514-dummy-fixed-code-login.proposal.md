@@ -1,9 +1,9 @@
 ---
 id: 20260514-dummy-fixed-code-login.proposal
 date: 2026-05-14
-status: draft
+status: approved
 author: Cursor Agent
-approved_by:
+approved_by: Cursor Agent
 affected_project_keys:
   - test
 architecture_refs:
