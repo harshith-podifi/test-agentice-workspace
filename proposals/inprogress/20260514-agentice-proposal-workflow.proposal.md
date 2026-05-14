@@ -1,13 +1,14 @@
 ---
 id: 20260514-agentice-proposal-workflow.proposal
 date: 2026-05-14
-status: approved
+status: draft
 author: workspace-bot
-approved_by: operator
+approved_by:
 affected_project_keys:
   - test
 architecture_refs:
-  - README.md
+  - docs/workspace-context/architecture.md
+  - projects/test/docs/architecture.md
 requires_context_updates: false
 ---
 
@@ -46,7 +47,7 @@ requires_context_updates: false
 
 **Context updates required:** none
 
-**Drift or open questions:** none
+**Drift or open questions:** Canonical Architecture-as-Code paths named in `architecture_refs` follow the Pod workspace layout; either file may be populated after separate project-context work even though this change set is documentation-only.
 
 ## Out of Scope
 
@@ -167,6 +168,12 @@ Task 1 -> Task 3
 
 - [ ] Whether to add automation scripts for proposal promotion — **Owner:** TBD — **Assumption:** manual moves suffice initially.
 
+## Revision History
+
+- 2026-05-14 12:05 UTC — Re-opened after review to replace the root `README.md` architecture anchor with canonical workspace and `test` project Architecture-as-Code paths in `architecture_refs`.
+
 ## References
 
 - `workspace.yaml`
+- `docs/workspace-context/architecture.md`
+- `projects/test/docs/architecture.md`
