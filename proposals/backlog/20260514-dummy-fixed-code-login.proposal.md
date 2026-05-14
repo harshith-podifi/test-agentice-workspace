@@ -8,6 +8,7 @@ affected_project_keys:
   - test
 architecture_refs:
   - workspace.yaml
+  - projects/test/test__primary_worktree/README.md
 requires_context_updates: true
 ---
 
@@ -19,8 +20,9 @@ requires_context_updates: true
 
 ### Current Behavior
 
-- The workspace registers project `test` (GitHub repo `harshith-podifi/test`) per `workspace.yaml`, but the Pod workspace checkout in this repository does not yet contain `docs/workspace-context/*` or `projects/test/docs/*` architecture docs on disk, so there is no checked-in description of routing, auth, or entry surfaces to extend.
-- The `test` application repository is a greenfield stub with no implemented login or route-guard behavior to reuse.
+- The workspace registers project `test` (GitHub repo `harshith-podifi/test`) per `workspace.yaml`. Pod workspace bootstrap now **provides** a verified primary git checkout at `projects/test/test__primary_worktree` (clone/sync via `pod-workspace-sync`); `pod-verify-primary-worktree --workspace workspace.yaml --project test` **passes**.
+- `docs/workspace-context/*` is still **absent** in this workspace checkout, and `projects/test/docs/` exists as a directory but has **no** Architecture-as-Code files yet, so there is no checked-in routing/auth pattern doc to extend—only the greenfield `README.md` in the primary worktree.
+- The primary worktree’s `README.md` states there is **no application code** yet (only placeholder artifacts), so there is **no** implemented login, router shell, or route-guard behavior to reuse; all gate flows are **net-new** implementation.
 
 ### Desired Behavior
 
@@ -48,7 +50,9 @@ requires_context_updates: true
 
 **Context updates required:** Add or extend `projects/test/docs/architecture.md` and `projects/test/docs/pattern.md` (when created) to describe the demo gate, the session/unlock mechanism, and explicit warnings that `1234` is non-production.
 
-**Drift or open questions:** Verified application source was not deep-read because project AoC docs and a primary worktree mapping are not yet established under this workspace checkout; implementation details (SPA framework, router) remain assumptions until the scaffold lands.
+**Drift or open questions:** Primary worktree **is** established and was read at the README level; no deeper source read was needed to confirm there is no competing login or router implementation. Project AoC under `projects/test/docs/` remains **unseeded** on disk, so framework and routing choices are still assumptions until a scaffold lands. **Deep-mode code baseline (approval review):** As of this revision, verified primary worktree content aligns with a **pure greenfield** app: no `LoginGate`, no route guard, and no client shell—consistent with sequence diagrams that label all app/runtime boundaries `[new]`. After implementation, reconcile labels and this section against real paths/routes (see Task 5).
+
+**Approval / operational prerequisites (review remediation):** `row_id` preflight / `pod-proposal-review` §5 — primary worktree path `projects/test/test__primary_worktree` must exist and verify clean **before** an approval-mode review treats `VALIDATION_MODE` as `full`. This workspace now satisfies that prerequisite; maintainers should re-run `pod-workspace-sync` and `pod-verify-primary-worktree` on fresh clones.
 
 ## Out of Scope
 
@@ -87,20 +91,20 @@ Overall data flow across the affected boundaries:
 sequenceDiagram
     autonumber
     actor User as User
-    participant Client as Client (host app) [changed]
+    participant Client as Client (host app) [new]
     participant Gate as LoginGate surface [new]
     participant Guard as Route or layout guard [new]
-    participant App as Main app shell [existing]
+    participant App as Main app shell [new]
 
-    User->>Client: Open application [existing]
-    Client->>Guard: Resolve initial navigation [changed]
+    User->>Client: Open application [new]
+    Client->>Guard: Resolve initial navigation [new]
     Guard->>Gate: Not unlocked; show gate [new]
     User->>Gate: Enter code and submit [new]
     Gate->>Gate: Validate against fixed PIN [new]
     alt Code is 1234
         Gate->>Guard: Mark session unlocked [new]
-        Guard->>App: Allow primary routes [changed]
-        App-->>User: Show main experience [existing]
+        Guard->>App: Allow primary routes [new]
+        App-->>User: Show main experience [new]
     else Code is not 1234
         Gate-->>User: Show error; remain on gate [new]
     end
@@ -114,14 +118,14 @@ sequenceDiagram
     actor User as User
     participant Gate as LoginGate surface [new]
     participant State as Unlock state store [new]
-    participant Router as Client router / layout [changed]
+    participant Router as Client router / layout [new]
 
     User->>Gate: Submit code "1234" [new]
     Gate->>Gate: Normalize and compare to constant [new]
     Gate->>State: Persist unlocked flag [new]
     State-->>Gate: Acknowledge [new]
-    Gate->>Router: Navigate to default authenticated route [changed]
-    Router-->>User: Render main app [changed]
+    Gate->>Router: Navigate to default authenticated route [new]
+    Router-->>User: Render main app [new]
 ```
 
 Per-feature flow — **failed attempt (blocked forward progress)**:
@@ -131,7 +135,7 @@ sequenceDiagram
     autonumber
     actor User as User
     participant Gate as LoginGate surface [new]
-    participant Router as Client router / layout [changed]
+    participant Router as Client router / layout [new]
 
     User->>Gate: Submit wrong code [new]
     Gate->>Gate: Compare; mismatch [new]
@@ -144,6 +148,15 @@ sequenceDiagram
 - **Client / `test` repo:** Introduce `LoginGate` (or equivalent) as the entry route when locked; add a small unlock state module; wrap protected layouts with a guard that reads that state.
 - **Constants:** Centralize the string `1234` in one module with a comment that it is **demo-only** and must not ship to production unchanged.
 - **UX:** Single field, primary submit action, accessible error text for wrong code.
+
+**Interaction verification mapping** (for manual / exploratory QA after build):
+
+| Interaction | Visible outcome |
+| :---------- | :-------------- |
+| Open app while locked | User sees only the login gate; no main app chrome or protected content. |
+| Submit wrong code | Inline error; user remains on gate; URL/navigation does not expose protected routes. |
+| Submit `1234` | User advances to main app shell / default route; gate no longer blocks until unlock state clears (per chosen persistence). |
+| Deep link to protected route while locked | Resolver redirects or substitutes gate; protected view does not render. |
 
 **Pros:**
 
@@ -195,8 +208,8 @@ sequenceDiagram
 
 | System / Component | How affected |
 | :----------------- | :----------- |
-| `test` (GitHub application repo) | New gate UI, route guard, and demo unlock state when application scaffold exists. |
-| Pod workspace (`test-agentice-workspace`) | Proposal backlog only for this change; follow-on AoC doc updates under `projects/test/docs/` once established. |
+| `test` (GitHub application repo) | Primary checkout at `projects/test/test__primary_worktree`; all gate and router work is **new** against the current greenfield tree. |
+| Pod workspace (`test-agentice-workspace`) | Proposal and future AoC under `projects/test/docs/`; workspace-level `docs/workspace-context/*` still absent. |
 
 ## Task Breakdown
 
@@ -216,8 +229,13 @@ sequenceDiagram
    Dependencies: Task 2
 
 4. **Task 4: Document demo limitations in project AoC**  
-   Intent: When `projects/test/docs/` exists, record the dummy PIN pattern and non-production warning.  
+   Intent: When `projects/test/docs/` is seeded, record the dummy PIN pattern and non-production warning.  
    Outcome: New contributors see that `1234` is intentional demo behavior, not security.  
+   Dependencies: Task 3
+
+5. **Task 5: Reconcile diagrams and tasks with primary-worktree seams**  
+   Intent: After Tasks 2–3 land in `projects/test/test__primary_worktree`, map each diagram boundary to real file paths, route names, or layout modules.  
+   Outcome: A short mapping table (or inline bullets) ties LoginGate, guard, unlock store, and router shell to concrete repo locations; diagram `[new]`/`[changed]` labels are updated if any boundary reuses existing code.  
    Dependencies: Task 3
 
 ### Task Breakdown Summary
@@ -226,6 +244,9 @@ sequenceDiagram
 
 ```text
 Task 1 -> Task 2 -> Task 3 -> Task 4
+                      |
+                      v
+                    Task 5
 ```
 
 #### Parallel execution waves
@@ -235,11 +256,13 @@ Task 1 -> Task 2 -> Task 3 -> Task 4
 | **Wave 1** | Task 1 | Unlock model agreed |
 | **Wave 2** | Task 2 | UI and validation compile |
 | **Wave 3** | Task 3 | Routing verified manually |
-| **Wave 4** | Task 4 | AoC paths available |
+| **Wave 4** | Task 4, Task 5 | AoC paths available; diagram reconciliation after code exists |
 
 #### Critical path
 
 `Task 1 -> Task 2 -> Task 3 -> Task 4`
+
+(Task 5 branches from Task 3 and closes **CV1** / deep-mode alignment after implementation.)
 
 #### Rationale
 
@@ -247,18 +270,21 @@ Task 1 -> Task 2 -> Task 3 -> Task 4
 - **Task 2** - Delivers the user-visible acceptance criteria.
 - **Task 3** - Satisfies “do not allow forward” for navigation edge cases.
 - **Task 4** - Prevents architectural misunderstanding after approval.
+- **Task 5** - Ensures proposal diagrams and checklist **SD3**/**TB9** claims remain true once code exists.
 
 ## Open Questions / Risks
 
-- [ ] **Input normalization** — **Owner:** TBD — **Assumption:** Leading/trailing whitespace is trimmed; no formatting mask required unless the scaffold UI library provides one by default.
-- [ ] **Unlock persistence across browser refresh** — **Owner:** TBD — **Assumption:** `sessionStorage` (or equivalent) is acceptable so demos are stable; stricter “always re-prompt on refresh” can be chosen if product prefers.
-- [ ] **Stack-specific routing** — **Owner:** TBD — **Assumption:** Whatever framework lands in `harshith-podifi/test` exposes a layout or router hook compatible with a guard component.
-- [ ] **AoC doc gap** — **Owner:** workspace maintainers — **Assumption:** `projects/test/docs/*` will be seeded by another initiative; until then this proposal cannot cite those files as evidence.
+- [x] **Primary worktree / approval preflight** — **Owner:** workspace maintainer — **Closed:** Checkout lives at `projects/test/test__primary_worktree`; run `pod-workspace-sync --workspace workspace.yaml --project test` on new machines, then confirm `pod-verify-primary-worktree` passes (remediates review **`row_id` preflight / `pod-proposal-review` §5** and unblocks **`row_id: CV1`** deep-mode reads).
+- [ ] **Input normalization** — **Owner:** feature implementer (`test` repo) — **Assumption:** Leading/trailing whitespace is trimmed; no formatting mask required unless the scaffold UI library provides one by default.
+- [ ] **Unlock persistence across browser refresh** — **Owner:** feature implementer (`test` repo) — **Assumption:** `sessionStorage` (or equivalent) is acceptable so demos are stable; stricter “always re-prompt on refresh” can be chosen if product prefers.
+- [ ] **Stack-specific routing** — **Owner:** feature implementer (`test` repo) — **Assumption:** Whatever framework lands in `harshith-podifi/test` exposes a layout or router hook compatible with a guard component.
+- [ ] **AoC doc gap** — **Owner:** workspace maintainers — **Assumption:** `projects/test/docs/*` will be seeded by `pod-project-context` or an equivalent initiative; directory exists today but has no markdown files yet.
 
 ## References
 
 - `workspace.yaml`
-- `https://github.com/harshith-podifi/test` (project repository README; greenfield status)
+- [`projects/test/test__primary_worktree/README.md`](../../projects/test/test__primary_worktree/README.md) (greenfield status of the application repo checkout)
+- [harshith-podifi/test on GitHub](https://github.com/harshith-podifi/test) — upstream repository definition
 
 ## Glossary
 
